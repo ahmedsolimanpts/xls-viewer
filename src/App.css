@@ -101,6 +101,7 @@
     margin: 0 5px;
     font-size: 15px;
     color: #343a40;
+    min-width: 120px; /* Give more space to prevent scrollbar */
 }
 
 .controls button {

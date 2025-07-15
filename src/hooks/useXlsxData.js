@@ -39,6 +39,15 @@ const useXlsxData = () => {
           setCurrentStartTimeHeader(determinedStartTimeHeader);
           setCurrentEndTimeHeader(determinedEndTimeHeader);
 
+          // Validate required headers
+          if (startTimeIndex === -1 || endTimeIndex === -1 || usageIndex === -1) {
+            setErrorMessage("This file does not contain the required 'Usage', 'Start Time', or 'End Time' columns. Please upload a valid call detail record file.");
+            setOriginalData([]);
+            setFilteredData([]);
+            setHeaders([]);
+            return;
+          }
+
           const processedData = jsonData.slice(1)
             .filter(row => {
               if (usageIndex === -1) return true;
@@ -162,8 +171,13 @@ const useXlsxData = () => {
     if (startTimeFilter && endTimeFilter) {
         const start = parseInt(startTimeFilter.replace(':', ''));
         const end = parseInt(endTimeFilter.replace(':', ''));
-        if (isNaN(start) || isNaN(end) || start < 0 || end > 2359 || start > end) {
-            setErrorMessage("Invalid time range. Please use HH:MM format and ensure start time is before end time.");
+        // Basic validation for time range
+        if (isNaN(start) || isNaN(end) || start < 0 || end > 2359) {
+            setErrorMessage("Invalid time format. Please use HH:MM.");
+            return;
+        }
+        if (start > end) {
+            setErrorMessage("End time cannot be earlier than start time.");
             return;
         }
         data = data.filter(row => {
