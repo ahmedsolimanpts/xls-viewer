@@ -2,37 +2,236 @@
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
 .App-header {
   background-color: #282c34;
-  min-height: 100vh;
+  padding: 20px;
+  color: white;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+.App-content {
+  flex: 1; /* This will make the content area grow and push the footer down */
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 20px;
+    background-color: #f0f0f0;
+    border-bottom: 2px solid #ddd;
+}
+
+.filter-group, .sort-group {
+    display: flex;
+    align-items: center;
+    margin: 10px;
+}
+
+.filter-group label, .sort-group label {
+    margin-right: 10px;
+    font-weight: bold;
+    color: #333;
+}
+
+.controls input[type="date"],
+.controls input[type="time"],
+.controls button {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin: 0 5px;
+    font-size: 14px;
+}
+
+.controls button {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.controls button:hover {
+    background-color: #45a049;
+}
+
+.table-container {
+  width: 90%;
+  margin: 20px auto;
+  background-color: #fff;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-header-fixed, .table-footer-fixed {
+  width: 100%;
+  display: table;
+  table-layout: fixed;
+}
+
+.table-row-header, .table-row-footer {
+  display: table-row;
+}
+
+.table-cell-header, .table-cell-footer {
+  display: table-cell;
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+  background-color: #4CAF50;
   color: white;
+  font-weight: bold;
 }
 
-.App-link {
-  color: #61dafb;
+.table-cell-footer {
+  background-color: #f0f0f0;
+  color: #333;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.table-row {
+  display: flex;
+  border-bottom: 1px solid #eee;
+}
+
+.table-row:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.table-row:hover {
+  background-color: #f1f1f1;
+}
+
+.table-cell {
+  flex: 1;
+  padding: 12px;
+  border-right: 1px solid #eee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex; /* Use flex for cells to align content */
+  align-items: center;
+}
+
+.table-cell:last-child {
+  border-right: none;
+}
+
+/* Chart Modal Styles */
+.chart-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.chart-container {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap; /* Allow items to wrap */
+}
+
+.chart-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.chart-toggle {
+  display: flex;
+  margin: 5px 0; /* Add some margin for spacing */
+}
+
+.chart-toggle button {
+  margin-left: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.chart-toggle button.active {
+  background-color: #0056b3;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+}
+
+.date-picker-chart {
+  margin-left: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.date-picker-chart label {
+  margin-right: 10px;
+  color: #333;
+}
+
+.date-picker-chart select {
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+footer {
+  background-color: #282c34;
+  color: white;
+  padding: 10px 0;
+  position: relative;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  margin-top: 20px; /* Add some space above the footer */
+}
+
+.error-message {
+  background-color: #ffdddd;
+  color: #d8000c;
+  padding: 10px;
+  margin: 10px auto;
+  border: 1px solid #d8000c;
+  border-radius: 5px;
+  width: 80%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-message button {
+  background: none;
+  border: none;
+  color: #d8000c;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
 }
