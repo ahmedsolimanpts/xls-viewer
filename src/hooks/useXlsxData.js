@@ -212,6 +212,19 @@ const useXlsxData = () => {
     setErrorMessage(null);
   };
 
+  const clearAllData = () => {
+    setOriginalData([]);
+    setFilteredData([]);
+    setHeaders([]);
+    setFilterDate('');
+    setStartTimeFilter('');
+    setEndTimeFilter('');
+    setSortConfig({ key: null, direction: 'ascending' });
+    setErrorMessage(null);
+    setCurrentStartTimeHeader('');
+    setCurrentEndTimeHeader('');
+  };
+
   const totals = useMemo(() => {
     return filteredData.reduce((acc, row) => {
         acc.Mega += parseFloat(row.Mega) || 0;
@@ -236,6 +249,7 @@ const useXlsxData = () => {
     sortConfig,
     requestSort,
     clearFilters,
+    clearAllData,
     handleFileUpload,
     totals,
     setErrorMessage,
