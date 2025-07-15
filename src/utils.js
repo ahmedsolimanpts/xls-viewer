@@ -40,4 +40,16 @@ const sanitizeString = (str) => {
   return str.replace(reg, (match) => (map[match]));
 };
 
-export { parseDateTime, formatDuration, sanitizeString };
+const formatTimeTo12Hour = (timeStr) => {
+  if (!timeStr) return '';
+  const [hours, minutes, seconds] = timeStr.split(':');
+  let h = parseInt(hours, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  h = h ? h : 12; // the hour '0' should be '12'
+  const m = minutes.padStart(2, '0');
+  const s = seconds ? `:${seconds.padStart(2, '0')}` : '';
+  return `${h}:${m}${s} ${ampm}`;
+};
+
+export { parseDateTime, formatDuration, sanitizeString, formatTimeTo12Hour };

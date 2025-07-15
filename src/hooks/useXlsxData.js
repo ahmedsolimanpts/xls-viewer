@@ -95,6 +95,7 @@ const useXlsxData = () => {
               rowData.Duration = duration;
               rowData.durationInSeconds = durationInSeconds;
               rowData.startTimeObj = startTime;
+              rowData.endTimeObj = endTime;
 
               return rowData;
             });

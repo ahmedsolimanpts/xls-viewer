@@ -35,10 +35,10 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>XLSX Viewer</h1>
+        <h1>Consumption Detail</h1>
         <div className="button-group">
           <label htmlFor="file-upload" className="custom-file-upload">
-            Choose XLSX File
+            Load Data
           </label>
           <input id="file-upload" type="file" onChange={e => handleFileUpload(e.target.files[0])} />
           <button onClick={clearAllData} className="clear-data-button">Clear All Data</button>
@@ -72,7 +72,7 @@ function App() {
         {showChart && <DataChart data={filteredData} onClose={() => setShowChart(false)} />}
       </div>
       <footer>
-        <p>&copy; 2025 XLSX Viewer. All rights reserved. Powered by <a href="https://github.com/ahmedsolimanpts" target="_blank" rel="noopener noreferrer">Ahmed Soliman</a></p>
+        <p>&copy; 2025 Consumption Detail. All rights reserved. Powered by <a href="https://github.com/ahmedsolimanpts" target="_blank" rel="noopener noreferrer">Ahmed Soliman</a></p>
       </footer>
     </div>
   );

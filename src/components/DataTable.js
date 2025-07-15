@@ -1,6 +1,6 @@
 import React from 'react';
 import { FixedSizeList } from 'react-window';
-import { formatDuration, sanitizeString } from '../utils';
+import { formatDuration, sanitizeString, formatTimeTo12Hour, parseDateTime } from '../utils';
 
 const DataTable = ({ filteredData, headers, totals, startTimeHeader, endTimeHeader }) => {
   return (
@@ -27,8 +27,10 @@ const DataTable = ({ filteredData, headers, totals, startTimeHeader, endTimeHead
             <div style={style} className="table-row">
               {headers.map(header => (
                 <div key={`${row.id}-${header}`} className="table-cell">
-                  {header === startTimeHeader || header === endTimeHeader
-                    ? String(row[header])
+                  {header === startTimeHeader && row.startTimeObj
+                    ? `${row.startTimeObj.toLocaleDateString()} ${formatTimeTo12Hour(row.startTimeObj.toLocaleTimeString('en-US', { hour12: false }))}`
+                    : header === endTimeHeader && row.endTimeObj
+                    ? `${row.endTimeObj.toLocaleDateString()} ${formatTimeTo12Hour(row.endTimeObj.toLocaleTimeString('en-US', { hour12: false }))}`
                     : sanitizeString(String(row[header]))}
                 </div>
               ))}
