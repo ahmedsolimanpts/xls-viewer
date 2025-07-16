@@ -1,7 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { parseDateTime, formatDuration, sanitizeString } from '../utils';
-
-const xlsxWorker = new Worker(new URL('../xlsx.worker.js', import.meta.url));
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { parseDateTime, formatDuration } from '../utils';
 
 const useXlsxData = () => {
   const [originalData, setOriginalData] = useState([]);
@@ -17,8 +15,14 @@ const useXlsxData = () => {
   const [currentStartTimeHeader, setCurrentStartTimeHeader] = useState('');
   const [currentEndTimeHeader, setCurrentEndTimeHeader] = useState('');
 
-  useEffect(() => {
-    xlsxWorker.onmessage = (event) => {
+  const workerRef = useRef(null);
+
+  const setupWorker = () => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+    }
+    const newWorker = new Worker(new URL('../xlsx.worker.js', import.meta.url));
+    newWorker.onmessage = (event) => {
       setIsLoading(false);
       const { status, jsonData, message } = event.data;
       if (status === 'success') {
@@ -39,7 +43,6 @@ const useXlsxData = () => {
           setCurrentStartTimeHeader(determinedStartTimeHeader);
           setCurrentEndTimeHeader(determinedEndTimeHeader);
 
-          // Validate required headers
           if (startTimeIndex === -1 || endTimeIndex === -1 || usageIndex === -1) {
             setErrorMessage("This file does not contain the required 'Usage', 'Start Time', or 'End Time' columns. Please upload a valid call detail record file.");
             setOriginalData([]);
@@ -113,9 +116,15 @@ const useXlsxData = () => {
         setIsLoading(false);
       }
     };
+    workerRef.current = newWorker;
+  };
 
+  useEffect(() => {
+    setupWorker();
     return () => {
-      xlsxWorker.onmessage = null;
+      if (workerRef.current) {
+        workerRef.current.terminate();
+      }
     };
   }, []);
 
@@ -137,13 +146,17 @@ const useXlsxData = () => {
         if (uint8Array[0] === 0x50 && uint8Array[1] === 0x4B && uint8Array[2] === 0x03 && uint8Array[3] === 0x04) {
           const fullReader = new FileReader();
           fullReader.onload = (e) => {
-            xlsxWorker.postMessage({ fileData: e.target.result });
+            if (workerRef.current) {
+              workerRef.current.postMessage({ fileData: e.target.result });
+            }
           };
           fullReader.readAsBinaryString(file);
         } else if (file.name.endsWith('.xls')) {
           const fullReader = new FileReader();
           fullReader.onload = (e) => {
-            xlsxWorker.postMessage({ fileData: e.target.result });
+            if (workerRef.current) {
+              workerRef.current.postMessage({ fileData: e.target.result });
+            }
           };
           fullReader.readAsBinaryString(file);
         }
@@ -172,7 +185,6 @@ const useXlsxData = () => {
     if (startTimeFilter && endTimeFilter) {
         const start = parseInt(startTimeFilter.replace(':', ''));
         const end = parseInt(endTimeFilter.replace(':', ''));
-        // Basic validation for time range
         if (isNaN(start) || isNaN(end) || start < 0 || end > 2359) {
             setErrorMessage("Invalid time format. Please use HH:MM.");
             return;
@@ -238,6 +250,7 @@ const useXlsxData = () => {
     setErrorMessage(null);
     setCurrentStartTimeHeader('');
     setCurrentEndTimeHeader('');
+    setupWorker();
   };
 
   const totals = useMemo(() => {

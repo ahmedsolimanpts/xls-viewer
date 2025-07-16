@@ -32,6 +32,15 @@ function App() {
 
   const [showChart, setShowChart] = useState(false);
 
+  const onFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+    // Allows re-uploading the same file
+    e.target.value = null;
+  };
+
   return (
     <div className="App">
       <header className="App-header">
@@ -40,7 +49,7 @@ function App() {
           <label htmlFor="file-upload" className="custom-file-upload">
             Load Data
           </label>
-          <input id="file-upload" type="file" onChange={e => handleFileUpload(e.target.files[0])} />
+          <input id="file-upload" type="file" onChange={onFileChange} />
           <button onClick={clearAllData} className="clear-data-button">Clear All Data</button>
         </div>
         {isLoading && <p>Processing file... Please wait.</p>}
