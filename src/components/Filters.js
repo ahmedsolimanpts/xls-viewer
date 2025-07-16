@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 
 const Filters = ({
   filterDate, setFilterDate,
@@ -7,17 +7,29 @@ const Filters = ({
   requestSort, clearFilters,
   setShowChart
 }) => {
+  const handleDateChange = useCallback(e => {
+    setFilterDate(e.target.value);
+  }, [setFilterDate]);
+
+  const handleStartTimeChange = useCallback(e => {
+    setStartTimeFilter(e.target.value);
+  }, [setStartTimeFilter]);
+
+  const handleEndTimeChange = useCallback(e => {
+    setEndTimeFilter(e.target.value);
+  }, [setEndTimeFilter]);
+
   return (
     <div className="controls">
       <div className="filter-group">
         <label>Filter by Day:</label>
-        <input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+        <input type="date" value={filterDate} onChange={handleDateChange} />
       </div>
       <div className="filter-group">
         <label>Filter by Hour Range:</label>
-        <input type="time" value={startTimeFilter} onChange={e => setStartTimeFilter(e.target.value)} />
+        <input type="time" value={startTimeFilter} onChange={handleStartTimeChange} />
         <span>-</span>
-        <input type="time" value={endTimeFilter} onChange={e => setEndTimeFilter(e.target.value)} />
+        <input type="time" value={endTimeFilter} onChange={handleEndTimeChange} />
       </div>
       <div className="sort-group">
         <button onClick={() => requestSort('Giga')}>Sort by Max Giga</button>
@@ -29,4 +41,4 @@ const Filters = ({
   );
 };
 
-export default Filters;
+export default memo(Filters);

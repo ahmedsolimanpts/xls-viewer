@@ -1,5 +1,8 @@
 const parseDateTime = (dateTimeStr) => {
-  if (!dateTimeStr || typeof dateTimeStr !== 'string') return null;
+  if (!dateTimeStr) return null;
+  if (dateTimeStr instanceof Date) return dateTimeStr; // Already a Date object
+  if (typeof dateTimeStr !== 'string') return null;
+
   const parts = dateTimeStr.match(/^(\d{2})\/(\d{2})\/(\d{4})\s(\d{2}):(\d{2}):(\d{2})$/);
   if (parts) {
     const day = parseInt(parts[1], 10);

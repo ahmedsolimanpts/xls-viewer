@@ -1,7 +1,7 @@
 
-import * as XLSX from 'xlsx';
+importScripts('/xlsx.full.min.js');
 
-onmessage = (event) => {
+onmessage = async (event) => {
   const { fileData } = event.data;
   try {
     const wb = XLSX.read(fileData, { type: 'binary' });

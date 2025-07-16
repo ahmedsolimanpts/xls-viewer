@@ -1,4 +1,4 @@
-import React, { useState, lazy } from 'react';
+import React, { useState, lazy, useCallback } from 'react';
 import './App.css';
 import useXlsxData from './hooks/useXlsxData';
 import DataTable from './components/DataTable';
@@ -32,14 +32,14 @@ function App() {
 
   const [showChart, setShowChart] = useState(false);
 
-  const onFileChange = (e) => {
+  const onFileChange = useCallback((e) => {
     const file = e.target.files[0];
     if (file) {
       handleFileUpload(file);
     }
     // Allows re-uploading the same file
     e.target.value = null;
-  };
+  }, [handleFileUpload]);
 
   return (
     <div className="App">
@@ -49,7 +49,7 @@ function App() {
           <label htmlFor="file-upload" className="custom-file-upload">
             Load Data
           </label>
-          <input id="file-upload" type="file" onChange={onFileChange} />
+          <input id="file-upload" type="file" onChange={onFileChange} accept=".xlsx,.xls" />
           <button onClick={clearAllData} className="clear-data-button">Clear All Data</button>
         </div>
         {isLoading && <p>Processing file... Please wait.</p>}

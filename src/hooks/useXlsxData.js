@@ -1,9 +1,12 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { parseDateTime, formatDuration } from '../utils';
+import { useState, useMemo, useCallback } from 'react';
+import useXlsxWorker from './useXlsxWorker';
+import useDataFiltering from './useDataFiltering';
+import useDataSorting from './useDataSorting';
+import useFileHandler from './useFileHandler'; // Import the new hook
+import { processXlsxData, determineHeaders } from '../utils/dataProcessing';
 
 const useXlsxData = () => {
   const [originalData, setOriginalData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [headers, setHeaders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -15,259 +18,97 @@ const useXlsxData = () => {
   const [currentStartTimeHeader, setCurrentStartTimeHeader] = useState('');
   const [currentEndTimeHeader, setCurrentEndTimeHeader] = useState('');
 
-  const workerRef = useRef(null);
+  const handleWorkerSuccess = useCallback((jsonData) => {
+    if (jsonData.length > 0) {
+      try {
+        const { finalHeaders, determinedStartTimeHeader, determinedEndTimeHeader } = determineHeaders(jsonData);
+        setHeaders(finalHeaders);
+        setCurrentStartTimeHeader(determinedStartTimeHeader);
+        setCurrentEndTimeHeader(determinedEndTimeHeader);
 
-  const setupWorker = () => {
-    if (workerRef.current) {
-      workerRef.current.terminate();
+        const processedData = processXlsxData(jsonData, determinedStartTimeHeader, determinedEndTimeHeader);
+        setOriginalData(processedData);
+      } catch (error) {
+        setErrorMessage(error.message);
+        setOriginalData([]);
+        setHeaders([]);
+      }
+    } else {
+      setOriginalData([]);
+      setHeaders([]);
     }
-    const newWorker = new Worker(new URL('../xlsx.worker.js', import.meta.url));
-    newWorker.onmessage = (event) => {
-      setIsLoading(false);
-      const { status, jsonData, message } = event.data;
-      if (status === 'success') {
-        if (jsonData.length > 0) {
-          const originalHeaders = jsonData[0];
-          const lowerCaseHeaders = originalHeaders.map(h => String(h).toLowerCase());
-
-          const startTimeIndex = lowerCaseHeaders.indexOf('start time');
-          const endTimeIndex = lowerCaseHeaders.indexOf('end time');
-          const usageIndex = lowerCaseHeaders.indexOf('usage');
-
-          const determinedStartTimeHeader = startTimeIndex !== -1 ? originalHeaders[startTimeIndex] : 'Start Time';
-          const determinedEndTimeHeader = endTimeIndex !== -1 ? originalHeaders[endTimeIndex] : 'End Time';
-
-          const finalHeaders = [determinedStartTimeHeader, determinedEndTimeHeader, 'Mega', 'Giga', 'Duration'];
-          setHeaders(finalHeaders);
-
-          setCurrentStartTimeHeader(determinedStartTimeHeader);
-          setCurrentEndTimeHeader(determinedEndTimeHeader);
-
-          if (startTimeIndex === -1 || endTimeIndex === -1 || usageIndex === -1) {
-            setErrorMessage("This file does not contain the required 'Usage', 'Start Time', or 'End Time' columns. Please upload a valid call detail record file.");
-            setOriginalData([]);
-            setFilteredData([]);
-            setHeaders([]);
-            return;
-          }
-
-          const processedData = jsonData.slice(1)
-            .filter(row => {
-              if (usageIndex === -1) return true;
-              const usage = parseFloat(row[usageIndex]);
-              if (isNaN(usage) || usage <= 0) return false;
-              
-              const mega = (usage / (1024 * 1024)).toFixed(2);
-              if (isNaN(parseFloat(mega)) || parseFloat(mega) <= 0) return false;
-
-              return true;
-            })
-            .map((row, i) => {
-              const rowData = { id: i };
-              let mega = 'N/A', giga = 'N/A', duration = 'Invalid Date', durationInSeconds = 0;
-
-              const startTimeStr = startTimeIndex !== -1 ? String(row[startTimeIndex]) : '';
-              const endTimeStr = endTimeIndex !== -1 ? String(row[endTimeIndex]) : '';
-
-              const rawUsage = usageIndex !== -1 ? row[usageIndex] : NaN;
-              const usage = typeof rawUsage === 'number' ? rawUsage : parseFloat(rawUsage);
-
-              if (!isNaN(usage)) {
-                mega = (usage / (1024 * 1024)).toFixed(2);
-                giga = (usage / (1024 * 1024 * 1024)).toFixed(2);
-              } else {
-                mega = 'N/A';
-                giga = 'N/A';
-              }
-
-              const startTime = parseDateTime(startTimeStr);
-              const endTime = parseDateTime(endTimeStr);
-
-              if (startTime && endTime) {
-                const diff = endTime - startTime;
-                if (diff >= 0) {
-                  durationInSeconds = Math.floor(diff / 1000);
-                  duration = formatDuration(durationInSeconds);
-                }
-              }
-              
-              rowData[determinedStartTimeHeader] = startTimeStr;
-              rowData[determinedEndTimeHeader] = endTimeStr;
-              rowData.Mega = mega;
-              rowData.Giga = giga;
-              rowData.Duration = duration;
-              rowData.durationInSeconds = durationInSeconds;
-              rowData.startTimeObj = startTime;
-              rowData.endTimeObj = endTime;
-
-              return rowData;
-            });
-
-          setOriginalData(processedData);
-          setFilteredData(processedData);
-        } else {
-          setOriginalData([]);
-          setFilteredData([]);
-          setHeaders([]);
-        }
-      } else {
-        console.error("Error from Web Worker:", message);
-        setErrorMessage("Error processing file: " + message);
-        setIsLoading(false);
-      }
-    };
-    workerRef.current = newWorker;
-  };
-
-  useEffect(() => {
-    setupWorker();
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-      }
-    };
   }, []);
 
-  const handleFileUpload = (file) => {
-    if (!file) return;
+  const handleWorkerError = useCallback((message) => {
+    console.error("Error from Web Worker:", message);
+    setErrorMessage("Error processing file: " + message);
+  }, []);
 
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      setErrorMessage("Invalid file type. Please upload an .xlsx or .xls file.");
-      return;
+  const handleWorkerMessage = useCallback((event) => {
+    setIsLoading(false);
+    const { status, jsonData, message } = event.data;
+    if (status === 'success') {
+      handleWorkerSuccess(jsonData);
+    } else {
+      handleWorkerError(message);
     }
+  }, [handleWorkerSuccess, handleWorkerError]);
 
-    setErrorMessage(null);
-    setIsLoading(true);
+  const { postMessageToWorker, resetWorker } = useXlsxWorker(handleWorkerMessage, handleWorkerError);
 
-    const reader = new FileReader();
-    reader.onloadend = (evt) => {
-      if (evt.target.readyState === FileReader.DONE) {
-        const uint8Array = new Uint8Array(evt.target.result);
-        if (uint8Array[0] === 0x50 && uint8Array[1] === 0x4B && uint8Array[2] === 0x03 && uint8Array[3] === 0x04) {
-          const fullReader = new FileReader();
-          fullReader.onload = (e) => {
-            if (workerRef.current) {
-              workerRef.current.postMessage({ fileData: e.target.result });
-            }
-          };
-          fullReader.readAsBinaryString(file);
-        } else if (file.name.endsWith('.xls')) {
-          const fullReader = new FileReader();
-          fullReader.onload = (e) => {
-            if (workerRef.current) {
-              workerRef.current.postMessage({ fileData: e.target.result });
-            }
-          };
-          fullReader.readAsBinaryString(file);
-        }
-        else {
-          setErrorMessage("File is not a valid XLSX/XLS file (magic number mismatch or unsupported format).");
-          setIsLoading(false);
-        }
-      }
-    };
-    reader.readAsArrayBuffer(file.slice(0, 4));
-  };
-
-  useEffect(() => {
-    let data = [...originalData];
-
-    if (filterDate) {
-        data = data.filter(row => {
-            if (row.startTimeObj) {
-                const rowDate = row.startTimeObj.toISOString().split('T')[0];
-                return rowDate === filterDate;
-            }
-            return false;
-        });
+  const { handleFileChange, isLoadingFile, fileError } = useFileHandler(
+    (fileData) => {
+      setIsLoading(true);
+      postMessageToWorker({ fileData });
+    },
+    (error) => {
+      setErrorMessage(error);
     }
+  );
 
-    if (startTimeFilter && endTimeFilter) {
-        const start = parseInt(startTimeFilter.replace(':', ''));
-        const end = parseInt(endTimeFilter.replace(':', ''));
-        if (isNaN(start) || isNaN(end) || start < 0 || end > 2359) {
-            setErrorMessage("Invalid time format. Please use HH:MM.");
-            return;
-        }
-        if (start > end) {
-            setErrorMessage("End time cannot be earlier than start time.");
-            return;
-        }
-        data = data.filter(row => {
-            if (row.startTimeObj) {
-                const rowTime = row.startTimeObj.getHours() * 100 + row.startTimeObj.getMinutes();
-                return rowTime >= start && rowTime <= end;
-            }
-            return false;
-        });
-    }
-
-    if (sortConfig.key) {
-        data.sort((a, b) => {
-            let aValue, bValue;
-            if (sortConfig.key === 'Giga') {
-                aValue = parseFloat(a.Giga);
-                bValue = parseFloat(b.Giga);
-            } else if (sortConfig.key === 'Duration') {
-                aValue = a.durationInSeconds;
-                bValue = b.durationInSeconds;
-            }
-
-            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-            return 0;
-        });
-    }
-
-    setFilteredData(data);
-  }, [originalData, filterDate, startTimeFilter, endTimeFilter, sortConfig]);
+  const filteredData = useDataFiltering(originalData, filterDate, startTimeFilter, endTimeFilter, setErrorMessage);
+  const { sortedData, requestSort: sortData } = useDataSorting(filteredData, sortConfig);
 
   const requestSort = (key) => {
-    let direction = 'descending';
-    if (sortConfig.key === key && sortConfig.direction === 'descending') {
-      direction = 'ascending';
-    }
-    setSortConfig({ key, direction });
+    setSortConfig(sortData(key));
   };
 
-  const clearFilters = () => {
+  const resetCommonState = useCallback(() => {
     setFilterDate('');
     setStartTimeFilter('');
     setEndTimeFilter('');
     setSortConfig({ key: null, direction: 'ascending' });
-    setFilteredData(originalData);
     setErrorMessage(null);
-  };
+  }, []);
 
-  const clearAllData = () => {
+  const clearFilters = useCallback(() => {
+    resetCommonState();
+  }, [resetCommonState]);
+
+  const clearAllData = useCallback(() => {
     setOriginalData([]);
-    setFilteredData([]);
     setHeaders([]);
-    setFilterDate('');
-    setStartTimeFilter('');
-    setEndTimeFilter('');
-    setSortConfig({ key: null, direction: 'ascending' });
-    setErrorMessage(null);
     setCurrentStartTimeHeader('');
     setCurrentEndTimeHeader('');
-    setupWorker();
-  };
+    resetCommonState();
+    resetWorker();
+  }, [resetCommonState, resetWorker]);
 
   const totals = useMemo(() => {
-    return filteredData.reduce((acc, row) => {
+    return sortedData.reduce((acc, row) => {
         acc.Mega += parseFloat(row.Mega) || 0;
         acc.Giga += parseFloat(row.Giga) || 0;
         acc.durationInSeconds += row.durationInSeconds || 0;
         return acc;
     }, { Mega: 0, Giga: 0, durationInSeconds: 0 });
-  }, [filteredData]);
+  }, [sortedData]);
 
   return {
     originalData,
-    filteredData,
+    filteredData: sortedData,
     headers,
-    isLoading,
-    errorMessage,
+    isLoading: isLoading || isLoadingFile,
+    errorMessage: errorMessage || fileError,
     filterDate,
     setFilterDate,
     startTimeFilter,
@@ -278,7 +119,7 @@ const useXlsxData = () => {
     requestSort,
     clearFilters,
     clearAllData,
-    handleFileUpload,
+    handleFileUpload: handleFileChange,
     totals,
     setErrorMessage,
     startTimeHeader: currentStartTimeHeader,
