@@ -1,16 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { FixedSizeList } from 'react-window';
-import { formatDuration, sanitizeString, formatTimeTo12Hour } from '../utils';
-
-const formatCellValue = (header, row, startTimeHeader, endTimeHeader) => {
-  if (header === startTimeHeader && row.startTimeObj) {
-    return `${row.startTimeObj.toLocaleDateString()} ${formatTimeTo12Hour(row.startTimeObj.toLocaleTimeString('en-US', { hour12: false }))}`;
-  } else if (header === endTimeHeader && row.endTimeObj) {
-    return `${row.endTimeObj.toLocaleDateString()} ${formatTimeTo12Hour(row.endTimeObj.toLocaleTimeString('en-US', { hour12: false }))}`;
-  } else {
-    return sanitizeString(String(row[header]));
-  }
-};
+import { formatCellValue } from '../utils/tableUtils';
+import DataTableFooter from './DataTableFooter';
 
 const DataTable = ({ filteredData, headers, totals, startTimeHeader, endTimeHeader }) => {
   const Row = useCallback(({ index, style }) => {
@@ -46,14 +37,7 @@ const DataTable = ({ filteredData, headers, totals, startTimeHeader, endTimeHead
       >
         {Row}
       </FixedSizeList>
-      <div className="table-footer-fixed"> {/* Footer for virtualized table */}
-        <div className="table-row-footer">
-          <div className="table-cell-footer" style={{ textAlign: 'right', fontWeight: 'bold', flex: 2 }}>Total:</div>
-          <div className="table-cell-footer">{totals.Mega.toFixed(2)} MB</div>
-          <div className="table-cell-footer">{totals.Giga.toFixed(2)} GB</div>
-          <div className="table-cell-footer">{formatDuration(totals.durationInSeconds)}</div>
-        </div>
-      </div>
+      <DataTableFooter totals={totals} />
     </div>
   );
 };

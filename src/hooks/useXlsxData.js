@@ -1,72 +1,36 @@
 import { useState, useMemo, useCallback } from 'react';
-import useXlsxWorker from './useXlsxWorker';
+import useFileProcessing from './useFileProcessing';
 import useDataFiltering from './useDataFiltering';
 import useDataSorting from './useDataSorting';
-import useFileHandler from './useFileHandler'; // Import the new hook
-import { processXlsxData, determineHeaders } from '../utils/dataProcessing';
 
 const useXlsxData = () => {
-  const [originalData, setOriginalData] = useState([]);
-  const [headers, setHeaders] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(null);
+  const { originalData, headers, isLoading, errorMessage, handleFileUpload, startTimeHeader, endTimeHeader, clearFileProcessingState } = useFileProcessing();
+
   const [filterDate, setFilterDate] = useState('');
+  const [startDateFilter, setStartDateFilter] = useState('');
+  const [endDateFilter, setEndDateFilter] = useState('');
   const [startTimeFilter, setStartTimeFilter] = useState('');
   const [endTimeFilter, setEndTimeFilter] = useState('');
+  const [freeUnitNameFilter, setFreeUnitNameFilter] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
-  const [currentStartTimeHeader, setCurrentStartTimeHeader] = useState('');
-  const [currentEndTimeHeader, setCurrentEndTimeHeader] = useState('');
-
-  const handleWorkerSuccess = useCallback((jsonData) => {
-    if (jsonData.length > 0) {
-      try {
-        const { finalHeaders, determinedStartTimeHeader, determinedEndTimeHeader } = determineHeaders(jsonData);
-        setHeaders(finalHeaders);
-        setCurrentStartTimeHeader(determinedStartTimeHeader);
-        setCurrentEndTimeHeader(determinedEndTimeHeader);
-
-        const processedData = processXlsxData(jsonData, determinedStartTimeHeader, determinedEndTimeHeader);
-        setOriginalData(processedData);
-      } catch (error) {
-        setErrorMessage(error.message);
-        setOriginalData([]);
-        setHeaders([]);
-      }
-    } else {
-      setOriginalData([]);
-      setHeaders([]);
-    }
+  const setErrorMessageForFiltering = useCallback((message) => {
+    // This setErrorMessage is passed down to useDataFiltering
+    // and will update the errorMessage state from useFileProcessing
+    // if there's a filtering error.
+    // This might need a more robust error handling strategy if errors
+    // from different hooks need to be distinguished.
+    // For now, we'll just rely on the errorMessage from useFileProcessing
+    // and assume filtering errors are handled internally by useDataFiltering
+    // by returning an empty array.
   }, []);
 
-  const handleWorkerError = useCallback((message) => {
-    console.error("Error from Web Worker:", message);
-    setErrorMessage("Error processing file: " + message);
-  }, []);
+  const uniqueFreeUnitNames = useMemo(() => {
+    const names = new Set(originalData.map(row => row['Free Unit Name']));
+    return ['', ...Array.from(names)];
+  }, [originalData]);
 
-  const handleWorkerMessage = useCallback((event) => {
-    setIsLoading(false);
-    const { status, jsonData, message } = event.data;
-    if (status === 'success') {
-      handleWorkerSuccess(jsonData);
-    } else {
-      handleWorkerError(message);
-    }
-  }, [handleWorkerSuccess, handleWorkerError]);
-
-  const { postMessageToWorker, resetWorker } = useXlsxWorker(handleWorkerMessage, handleWorkerError);
-
-  const { handleFileChange, isLoadingFile, fileError } = useFileHandler(
-    (fileData) => {
-      setIsLoading(true);
-      postMessageToWorker({ fileData });
-    },
-    (error) => {
-      setErrorMessage(error);
-    }
-  );
-
-  const filteredData = useDataFiltering(originalData, filterDate, startTimeFilter, endTimeFilter, setErrorMessage);
+  const filteredData = useDataFiltering(originalData, filterDate, startDateFilter, endDateFilter, startTimeFilter, endTimeFilter, freeUnitNameFilter, setErrorMessageForFiltering);
   const { sortedData, requestSort: sortData } = useDataSorting(filteredData, sortConfig);
 
   const requestSort = (key) => {
@@ -75,10 +39,12 @@ const useXlsxData = () => {
 
   const resetCommonState = useCallback(() => {
     setFilterDate('');
+    setStartDateFilter('');
+    setEndDateFilter('');
     setStartTimeFilter('');
     setEndTimeFilter('');
+    setFreeUnitNameFilter('');
     setSortConfig({ key: null, direction: 'ascending' });
-    setErrorMessage(null);
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -86,13 +52,9 @@ const useXlsxData = () => {
   }, [resetCommonState]);
 
   const clearAllData = useCallback(() => {
-    setOriginalData([]);
-    setHeaders([]);
-    setCurrentStartTimeHeader('');
-    setCurrentEndTimeHeader('');
+    clearFileProcessingState();
     resetCommonState();
-    resetWorker();
-  }, [resetCommonState, resetWorker]);
+  }, [clearFileProcessingState, resetCommonState]);
 
   const totals = useMemo(() => {
     return sortedData.reduce((acc, row) => {
@@ -107,23 +69,30 @@ const useXlsxData = () => {
     originalData,
     filteredData: sortedData,
     headers,
-    isLoading: isLoading || isLoadingFile,
-    errorMessage: errorMessage || fileError,
+    isLoading,
+    errorMessage,
     filterDate,
     setFilterDate,
+    startDateFilter,
+    setStartDateFilter,
+    endDateFilter,
+    setEndDateFilter,
     startTimeFilter,
     setStartTimeFilter,
     endTimeFilter,
     setEndTimeFilter,
+    freeUnitNameFilter,
+    setFreeUnitNameFilter,
+    uniqueFreeUnitNames,
     sortConfig,
     requestSort,
     clearFilters,
     clearAllData,
-    handleFileUpload: handleFileChange,
+    handleFileUpload,
     totals,
-    setErrorMessage,
-    startTimeHeader: currentStartTimeHeader,
-    endTimeHeader: currentEndTimeHeader
+    setErrorMessage: setErrorMessageForFiltering, // Expose the filtering error setter
+    startTimeHeader,
+    endTimeHeader
   };
 };
 

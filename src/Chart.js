@@ -2,11 +2,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { aggregateChartData, sortChartLabels } from './utils/chartDataProcessing';
+import { generateChartOptions, generateChartData } from './utils/chartUtils';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const DataChart = ({ data, onClose }) => {
-  const [dataType, setDataType] = useState('Mega'); // 'Mega' or 'Giga'
+  const [dataType, setDataType] = useState('Mega'); // 'Mega', 'Giga', 'Main', or 'EXTENION'
   const [groupBy, setGroupBy] = useState('day'); // 'day' or 'hour'
   const [selectedDay, setSelectedDay] = useState('');
 
@@ -31,43 +32,12 @@ const DataChart = ({ data, onClose }) => {
   const aggregatedData = useMemo(() => aggregateChartData(data, groupBy, selectedDay), [data, groupBy, selectedDay]);
   const sortedLabels = useMemo(() => sortChartLabels(aggregatedData, groupBy), [aggregatedData, groupBy]);
 
-  const chartData = {
-    labels: sortedLabels,
-    datasets: [
-      {
-        label: `${dataType} Consumption`,
-        data: sortedLabels.map(label => aggregatedData[label][dataType]),
-        backgroundColor: dataType === 'Mega' ? 'rgba(255, 99, 132, 0.5)' : 'rgba(54, 162, 235, 0.5)',
-      },
-    ],
-  };
+  const total = useMemo(() => {
+    return sortedLabels.reduce((acc, label) => acc + aggregatedData[label][dataType], 0);
+  }, [sortedLabels, aggregatedData, dataType]);
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top',
-      },
-      title: {
-        display: true,
-        text: `${groupBy === 'day' ? 'Daily' : 'Hourly'} ${dataType} Consumption`,
-      },
-    },
-    scales: {
-        x: {
-            title: {
-                display: true,
-                text: groupBy === 'day' ? 'Date' : 'Time of Day'
-            }
-        },
-        y: {
-            title: {
-                display: true,
-                text: dataType
-            }
-        }
-    }
-  };
+  const chartData = useMemo(() => generateChartData(sortedLabels, aggregatedData, dataType), [sortedLabels, aggregatedData, dataType]);
+  const options = useMemo(() => generateChartOptions(groupBy, dataType), [groupBy, dataType]);
 
   return (
     <div className="chart-modal">
@@ -75,12 +45,18 @@ const DataChart = ({ data, onClose }) => {
         <div className="chart-header">
           <h2>Consumption Chart</h2>
           <div className="chart-toggle">
-            <button onClick={() => setDataType('Mega')} className={dataType === 'Mega' ? 'active' : ''}>Mega</button>
-            <button onClick={() => setDataType('Giga')} className={dataType === 'Giga' ? 'active' : ''}>Giga</button>
+            <label htmlFor="dataType-select">Select Data Type:</label>
+            <select id="dataType-select" value={dataType} onChange={e => setDataType(e.target.value)}>
+              <option value="Mega">Mega</option>
+              <option value="Giga">Giga</option>
+              <option value="Main">Main Quota</option>
+              <option value="EXTENION">Extension Quota</option>
+              <option value="Others">Others</option>
+            </select>
           </div>
           <div className="chart-toggle">
             <button onClick={() => setGroupBy('day')} className={groupBy === 'day' ? 'active' : ''}>By Day</button>
-            <button onClick={() => setGroupBy('hour')} className={groupBy === 'hour' ? 'active' : ''}>By Time</button>
+            <button onClick={() => setGroupBy('hour')} className={groupBy === 'hour' ? 'active' : ''}>By Hours</button>
           </div>
           {groupBy === 'hour' && uniqueDays.length > 0 && (
             <div className="date-picker-chart">
@@ -93,6 +69,9 @@ const DataChart = ({ data, onClose }) => {
             </div>
           )}
           <button onClick={onClose} className="close-button">X</button>
+        </div>
+        <div className="chart-total">
+          <h3>Total {dataType}: {total.toFixed(2)} {dataType === 'Mega' ? 'Mega' : 'Giga'}</h3>
         </div>
         <Bar options={options} data={chartData} />
       </div>

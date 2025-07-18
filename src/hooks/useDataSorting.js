@@ -14,6 +14,12 @@ const useDataSorting = (data, sortConfig) => {
         } else if (sortConfig.key === 'Duration') {
           aValue = a.durationInSeconds;
           bValue = b.durationInSeconds;
+        } else if (sortConfig.key === 'Start Time') {
+          aValue = a.startTimeObj;
+          bValue = b.startTimeObj;
+        } else if (sortConfig.key === 'End Time') {
+          aValue = a.endTimeObj;
+          bValue = b.endTimeObj;
         }
 
         if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
