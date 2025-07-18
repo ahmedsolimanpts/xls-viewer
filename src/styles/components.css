@@ -137,11 +137,15 @@
 .chart-total {
   text-align: center;
   margin-bottom: 15px;
+  padding: 10px;
+  background-color: #e9ecef;
+  border-radius: 5px;
 }
 
 .chart-total h3 {
   color: #333;
   font-size: 1.2em;
+  margin: 0;
 }
 
 .chart-modal {
@@ -155,16 +159,128 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 10px; /* Add padding for small screens */
 }
 
 .chart-container {
   background-color: #fff;
   padding: 20px;
   border-radius: 8px;
-  width: 90%;
-  max-width: 800px;
+  /* Use min() to ensure it fits within the smaller of viewport width or height */
+  width: min(90vw, 90vh); /* Take 90% of the smaller dimension of the viewport */
+  max-width: 900px; /* Keep a max-width for very large screens */
+  max-height: 95vh; /* Allow more height for chart content */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 1 / 1;
+  overflow: auto; /* Allow scrolling if content overflows */
+}
+
+/* Responsive Adjustments for Components */
+@media (max-width: 768px) {
+  .controls {
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  .filter-group, .sort-group {
+    flex-direction: column;
+    margin: 5px;
+    width: 100%;
+  }
+
+  .filter-group label, .sort-group label {
+    margin-right: 0;
+    margin-bottom: 5px;
+  }
+
+  .controls input[type="date"],
+  .controls input[type="time"],
+  .controls select,
+  .controls button {
+    width: calc(100% - 20px); /* Adjust for padding/margin */
+    margin: 5px 0;
+  }
+
+  .table-container {
+    width: 98%;
+    margin: 0 auto;
+  }
+
+  .table-cell {
+    padding: 8px;
+    font-size: 0.9em;
+  }
+
+  .chart-container {
+    width: min(95vw, 95vh); /* Adjust for smaller screens */
+    padding: 15px;
+    max-height: 95vh; /* Adjust for smaller screens */
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chart-toggle {
+    margin-top: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .chart-toggle button, .chart-toggle select {
+    margin: 5px;
+    width: auto; /* Allow buttons/selects to size naturally */
+  }
+
+  .date-picker-chart {
+    margin-left: 0;
+    margin-top: 10px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .error-message {
+    width: 95%;
+    padding: 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .controls input[type="date"],
+  .controls input[type="time"],
+  .controls select,
+  .controls button {
+    font-size: 14px;
+    padding: 8px 10px;
+  }
+
+  .table-cell {
+    font-size: 0.8em;
+    padding: 6px;
+  }
+
+  .table-cell-header, .table-cell-footer {
+    font-size: 0.9em;
+    padding: 10px;
+  }
+
+  .error-message {
+    font-size: 13px;
+  }
+
+  .chart-toggle button, .chart-toggle select {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .chart-header h2 {
+    font-size: 1.5em;
+  }
 }
 
 .chart-header {
@@ -172,17 +288,21 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  flex-wrap: wrap; /* Allow items to wrap */
+  flex-wrap: wrap;
+  gap: 10px; /* Space between header items */
 }
 
 .chart-header h2 {
   margin: 0;
   color: #333;
+  flex-grow: 1; /* Allow title to take available space */
 }
 
 .chart-toggle {
   display: flex;
-  margin: 5px 0; /* Add some margin for spacing */
+  gap: 10px; /* Space between buttons/selects */
+  margin: 5px 0;
+  flex-wrap: wrap; /* Allow items to wrap */
 }
 
 .chart-toggle select {
@@ -190,11 +310,11 @@
   border-radius: 5px;
   border: 1px solid #ccc;
   font-size: 14px;
-  margin-left: 10px;
   background-color: #f8f9fa;
   color: #333;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-width: 120px; /* Ensure minimum width */
 }
 
 .chart-toggle select:hover {
@@ -208,19 +328,19 @@
 }
 
 .chart-toggle label {
-  margin-left: 10px;
   font-weight: bold;
   color: #333;
+  align-self: center; /* Align label vertically */
 }
 
 .chart-toggle button {
-  margin-left: 10px;
   background-color: #007bff;
   color: white;
   border: none;
   padding: 8px 15px;
   border-radius: 5px;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .chart-toggle button.active {
@@ -230,19 +350,24 @@
 .close-button {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px; /* Slightly larger for better tap target */
   cursor: pointer;
   color: #333;
+  padding: 5px;
+  line-height: 1; /* Prevent extra space */
+}
+
+.close-button:hover {
+  color: #dc3545; /* Red on hover */
 }
 
 .date-picker-chart {
-  margin-left: 20px;
   display: flex;
   align-items: center;
+  gap: 10px; /* Space between label and select */
 }
 
 .date-picker-chart label {
-  margin-right: 10px;
   color: #333;
 }
 
@@ -278,7 +403,7 @@
   margin-left: 10px;
 }
 
-/* Responsive Adjustments */
+/* Responsive Adjustments for Components */
 @media (max-width: 768px) {
   .controls {
     flex-direction: column;
@@ -298,6 +423,7 @@
 
   .controls input[type="date"],
   .controls input[type="time"],
+  .controls select,
   .controls button {
     width: calc(100% - 20px); /* Adjust for padding/margin */
     margin: 5px 0;
@@ -316,6 +442,7 @@
   .chart-container {
     width: 95%;
     padding: 15px;
+    max-height: 90vh; /* Adjust for smaller screens */
   }
 
   .chart-header {
@@ -329,8 +456,9 @@
     justify-content: center;
   }
 
-  .chart-toggle button {
+  .chart-toggle button, .chart-toggle select {
     margin: 5px;
+    width: auto; /* Allow buttons/selects to size naturally */
   }
 
   .date-picker-chart {
@@ -350,6 +478,7 @@
 @media (max-width: 480px) {
   .controls input[type="date"],
   .controls input[type="time"],
+  .controls select,
   .controls button {
     font-size: 14px;
     padding: 8px 10px;
@@ -367,5 +496,14 @@
 
   .error-message {
     font-size: 13px;
+  }
+
+  .chart-toggle button, .chart-toggle select {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .chart-header h2 {
+    font-size: 1.5em;
   }
 }

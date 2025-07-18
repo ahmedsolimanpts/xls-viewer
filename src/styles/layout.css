@@ -101,10 +101,22 @@ footer a:hover {
   .App-header h1 {
     font-size: 1.8em;
   }
+  .App-header .button-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .App-header .custom-file-upload, .App-header .clear-data-button {
+    width: 80%;
+  }
 }
 
 @media (max-width: 480px) {
   .App-header h1 {
     font-size: 1.5em;
+  }
+  .App-header .custom-file-upload, .App-header .clear-data-button {
+    width: 90%;
+    font-size: 14px;
+    padding: 8px 15px;
   }
 }

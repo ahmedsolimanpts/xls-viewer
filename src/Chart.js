@@ -1,15 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar, Line, Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement } from 'chart.js';
 import { aggregateChartData, sortChartLabels } from './utils/chartDataProcessing';
 import { generateChartOptions, generateChartData } from './utils/chartUtils';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, PointElement, LineElement, ArcElement);
 
 const DataChart = ({ data, onClose }) => {
   const [dataType, setDataType] = useState('Mega'); // 'Mega', 'Giga', 'Main', or 'EXTENION'
   const [groupBy, setGroupBy] = useState('day'); // 'day' or 'hour'
   const [selectedDay, setSelectedDay] = useState('');
+  const [chartType, setChartType] = useState('bar'); // 'bar', 'line', 'pie'
 
   // Extract all unique days from the data for the date picker
   const uniqueDays = useMemo(() => {
@@ -36,14 +37,19 @@ const DataChart = ({ data, onClose }) => {
     return sortedLabels.reduce((acc, label) => acc + aggregatedData[label][dataType], 0);
   }, [sortedLabels, aggregatedData, dataType]);
 
-  const chartData = useMemo(() => generateChartData(sortedLabels, aggregatedData, dataType), [sortedLabels, aggregatedData, dataType]);
-  const options = useMemo(() => generateChartOptions(groupBy, dataType), [groupBy, dataType]);
+  const chartData = useMemo(() => generateChartData(sortedLabels, aggregatedData, dataType, chartType), [sortedLabels, aggregatedData, dataType, chartType]);
+  const options = useMemo(() => generateChartOptions(groupBy, dataType, chartType), [groupBy, dataType, chartType]);
 
   return (
     <div className="chart-modal">
       <div className="chart-container">
         <div className="chart-header">
           <h2>Consumption Chart</h2>
+          <div className="chart-toggle">
+            <button onClick={() => setChartType('bar')} className={chartType === 'bar' ? 'active' : ''}>Bar Chart</button>
+            <button onClick={() => setChartType('line')} className={chartType === 'line' ? 'active' : ''}>Line Chart</button>
+            <button onClick={() => setChartType('pie')} className={chartType === 'pie' ? 'active' : ''}>Pie Chart</button>
+          </div>
           <div className="chart-toggle">
             <label htmlFor="dataType-select">Select Data Type:</label>
             <select id="dataType-select" value={dataType} onChange={e => setDataType(e.target.value)}>
@@ -73,7 +79,9 @@ const DataChart = ({ data, onClose }) => {
         <div className="chart-total">
           <h3>Total {dataType}: {total.toFixed(2)} {dataType === 'Mega' ? 'Mega' : 'Giga'}</h3>
         </div>
-        <Bar options={options} data={chartData} />
+        {chartType === 'bar' && <Bar options={options} data={chartData} />}
+        {chartType === 'line' && <Line options={options} data={chartData} />}
+        {chartType === 'pie' && <Pie options={options} data={chartData} />}
       </div>
     </div>
   );
